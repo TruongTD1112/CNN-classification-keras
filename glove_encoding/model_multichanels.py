@@ -7,7 +7,9 @@ from tensorflow.keras.models import Model
 from sklearn.model_selection import train_test_split
 from data_helpers import load_data
 import matplotlib.pyplot as plt
-from encoding import load_pre_train_data
+from encoding_vector import load_pre_train_data
+from tensorflow.keras import regularizers
+
 x, y, embedding_matrix = load_pre_train_data()
 
 print('Loading data')
@@ -35,7 +37,7 @@ drop = 0.5
 
 
 epochs = 15
-batch_size = 30
+batch_size = 50
 
 # this returns a tensor
 print("Creating Model...")
@@ -69,7 +71,9 @@ maxpool_8 = tf.math.maximum(maxpool_2, maxpool_5);
 concatenated_tensor = Concatenate(axis=1)([maxpool_6, maxpool_7, maxpool_8])
 flatten = Flatten()(concatenated_tensor)
 dropout = Dropout(drop)(flatten)
-output = Dense(units=2, activation='softmax')(dropout)
+output = Dense(units=2, activation='softmax', kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+    bias_regularizer=regularizers.l2(1e-4),
+    activity_regularizer=regularizers.l2(1e-5))(dropout)
 
 # this creates a model that includes
 model = Model(inputs=inputs, outputs=output)
@@ -84,7 +88,7 @@ history = model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs, verb
 
 plt.plot(history.history['acc'])
 plt.plot(history.history['val_acc'])
-plt.title('model accuracy')
+plt.title('model CNN-multichannels')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'validation'], loc='upper left')

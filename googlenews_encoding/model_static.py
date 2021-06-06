@@ -4,10 +4,13 @@ from keras.callbacks import ModelCheckpoint
 from keras.optimizers import Adam
 from keras.models import Model
 from sklearn.model_selection import train_test_split
-from encoding import load_pre_train_data
+from encoding_vector import load_embedding_vector, load_one_hot_vector
+from tensorflow.keras import regularizers
+from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 print('Loading data')
-x, y, embedding_matrix = load_pre_train_data()
+x, y = load_one_hot_vector()
+embedding_matrix = load_embedding_vector()
 vocabulary = 18765
 # x.shape -> (10662, 56)
 # y.shape -> (10662, 2)
@@ -24,13 +27,13 @@ X_train, X_test, y_train, y_test = train_test_split( x, y, test_size=0.2, random
 
 sequence_length = x.shape[1] # 56
 vocabulary_size = 18765
-embedding_dim = 50
+embedding_dim = 300
 filter_sizes = [3,4,5]
 num_filters = 100
 drop = 0.5
 
-epochs = 10
-batch_size = 30
+epochs = 30
+batch_size = 50
 
 # this returns a tensor
 print("Creating Model...")
@@ -49,22 +52,30 @@ maxpool_2 = MaxPool2D(pool_size=(sequence_length - filter_sizes[2] + 1, 1), stri
 concatenated_tensor = Concatenate(axis=1)([maxpool_0, maxpool_1, maxpool_2])
 flatten = Flatten()(concatenated_tensor)
 dropout = Dropout(drop)(flatten)
-output = Dense(units=2, activation='softmax')(dropout)
+output = Dense(units=2, activation='softmax', kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+    bias_regularizer=regularizers.l2(1e-4),
+    activity_regularizer=regularizers.l2(1e-5))(dropout)
 
 # this creates a model that includes
 model = Model(inputs=inputs, outputs=output)
 
 checkpoint = ModelCheckpoint('weights.{epoch:03d}-{val_acc:.4f}.hdf5', monitor='val_acc', verbose=1, save_best_only=True, mode='auto')
 adam = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
-
 model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
+history = model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1,  validation_split=0.1)  # starts training
+
+y_predict_prohibit = model.predict(X_test)
+y_predict_label = list(map(lambda v: v > 0.5, y_predict_prohibit))
+# for i in range(1, 15):
+#     print(y_predict_label[i])
+accuracy = accuracy_score(y_test, y_predict_label)
+print(accuracy)
+
+
 print("Traning Model...")
-history = model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1,  validation_data=(X_test, y_test))  # starts training
-
-
 plt.plot(history.history['accuracy'])
 plt.plot(history.history['val_accuracy'])
-plt.title('model accuracy')
+plt.title('model CNN-non-static')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'validation'], loc='upper left')

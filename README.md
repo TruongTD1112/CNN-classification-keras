@@ -9,7 +9,9 @@
 - sklearn
 - numpy
 - Tải file encoding glove tại đây: https://www.kaggle.com/watts2/glove6b50dtxt
-- sau đó thêm file encoding glove vào trong cùng cấp thư mục với file encoding.py
+- sau đó thêm file đã tải vào trong folder glove_encoding
+- Tải file encoding google-news encoding tại đây: https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM/edit
+- Sau đó thêm file đã tải vào trong folder googlenews_encoding
 
 
 # Hướng dẫn chạy
